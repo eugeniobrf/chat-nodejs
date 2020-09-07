@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista salas</title>
+</head>
+<body>
+    <h1>Insira seu nick:</h1>
+    <input type="text" name="nick" id="nick" placeholder="Insira seu nick">
+    <h1>Lista de salas:</h1>
+    <% for(const i of salas){ %> 
+        <button onclick="redirect( 
+            <%= i.id %> 
+        )">
+            <h2>Sala <%= i.id %></h2>
+            <h3>Conectados: <%= i.conectados %></h3>
+        </button>
+    <% } %>
+    <script type="text/javascript">
+        function redirect(sala){
+            const nick = document.getElementById('nick').value;
+            if(nick){
+                window.location.href = "/sala/"+sala+"?nick="+nick;
+            }else{
+                alert("Antes de entrar em uma sala, por favor, entre com seu nick");
+            }
+        }
+    </script>
+</body>
+</html>
