@@ -14,6 +14,7 @@ app.set('view engine', 'html');
 
 //rota para se listar as salas ativas
 app.use('/salas',(req,res)=>{
+    const {err} = req.query;
     salas = [];
     for (let i=1; i<=10 ; i++){
         if(socket.sockets.adapter.rooms[i]){
@@ -22,14 +23,26 @@ app.use('/salas',(req,res)=>{
             salas.push({"id":i,"conectados":0})
         }
     }
-    res.render('salas.ejs',{salas});
+    res.render('salas.ejs',{salas,'erro':err});
 });
 
 //rota da sala do chat
 app.use('/sala/:id',(req,res)=>{
     const {nick} = req.query;
     const sala = req.params.id;
-    res.render('chat.ejs',{sala,nick}); 
+    if(socket.sockets.adapter.rooms[sala]){
+        if(socket.sockets.adapter.rooms[sala].length==1 && Object.keys(socket.sockets.adapter.rooms[sala].sockets).indexOf(sala)==0){
+            //sala pessoal
+            req.query.err = 1;
+            return res.redirect('/salas?err=1');
+        }
+        if(socket.sockets.adapter.rooms[sala].length>=4){
+            //sala cheia
+            return res.redirect('/salas?err=2');
+        }
+    }
+    const link = 'http://localhost:3333/'
+    res.render('chat.ejs',{sala,nick,link}); 
 });
 
 //caso se tente acessar um caminho inválido, redireciona para a tela de seleção de sala
@@ -39,10 +52,28 @@ app.use('*',(req,res)=>{
 
 //manipulação do socket.io
 socket.on('connection',s=> {
-    
+    console.log(s.id);
     s.on('joinRoom',(d)=>{
-        //verifica se a sala a qual se deseja entrar é valida
-        if(d.sala>=1 && d.sala<=10){
+        let entra;
+        //verifica se a sala é não pessoal
+        if(!socket.sockets.adapter.rooms[d.sala]){
+            //sala ainda nao existe
+            entra=true;
+        }else{
+            if(socket.sockets.adapter.rooms[d.sala].length==1 && Object.keys(socket.sockets.adapter.rooms[d.sala].sockets).indexOf(d.sala)==0){
+                //sala com uma unica pessoa com nome da sala igual ao unico membro da sala (sala pessoal)
+                entra=false;
+                s.emit('erro',{'erro':'1'})
+            }else{
+                if(socket.sockets.adapter.rooms[d.sala].length>=4){
+                    //sala cheia
+                    entra=false;
+                    s.emit('erro',{'erro':'2'});
+                }
+                entra=true;
+            }  
+        }
+        if(entra){
             s.sala=d.sala;
             //caso nao se passe um nick, seta ele com o id padrao gerado pelo socket.io
             if(!d.nick){
@@ -54,8 +85,6 @@ socket.on('connection',s=> {
             //avisa a todos da sala q alguem entrou
             s.to(s.sala).emit('resposta',{"msg":'Entrou!',"autor":s.nick});
             s.emit('resposta',{"msg":'Entrou!',"autor":s.nick});
-        }else{
-            s.emit('erro','Sala inválida!!!')
         }
     })
 

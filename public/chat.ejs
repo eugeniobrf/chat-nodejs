@@ -7,6 +7,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js" integrity="sha512-v8ng/uGxkge3d1IJuEo6dJP8JViyvms0cly9pnbfRxT6/31c3dRWxIiwGnMSWwZjHKOuY3EVmijs7k1jz/9bLA==" crossorigin="anonymous"></script>
 </head>
 <body>
+    <script type="text/javascript">
+        const socket = io('<%=link%>');
+        socket.emit('joinRoom',{'sala':'<%=sala%>','nick':'<%=nick%>'});
+        socket.on('erro',(d)=>(window.location.href = '/salas?err=' + d.erro));
+    </script>
+    <div id="nomeSala">
+        <h1>Sala: <%=sala%> </h1>
+    </div>
     <div id="mensagens">
         
     </div><br>    
@@ -23,9 +31,7 @@
             }
         });
 
-        const socket = io('http://localhost:3333/')
-        socket.emit('joinRoom',{"sala":"<%=sala%>","nick":"<%=nick%>"});
-
+        
         socket.on('resposta',(d)=>adiciona(d));
 
         function enviar(){
